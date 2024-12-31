@@ -32,27 +32,41 @@ def with(command)
   io.readlines.map(&:chomp)
 end
 
+$opener = executable('open', 'xdg-open')
+$opener = 'nohup xdg-open' if $opener == 'xdg-open'
+halt 'No command to open URL with' unless $opener
+
+def open_url(url)
+  system "#{$opener} #{Shellwords.escape(url)} &> /dev/null"
+end
+
 # TODO: Keep it simple for now
 def extract_urls(line)
   line.scan(%r{(?:https?|file)://[-a-zA-Z0-9@:%_+.~#?&/=]+[-a-zA-Z0-9@%_+.~#?&/=!]+}x)
 end
 
-lines = `tmux capture-pane -J -p -S -99999`
+limit = ARGV[0] || 'screen'
+lines = ''
+if limit == 'screen'
+  lines = `tmux capture-pane -J -p`
+else
+  lines = `tmux capture-pane -J -p -S -#{limit}`
+end
 urls = lines.each_line.map(&:strip).reject(&:empty?)
             .flat_map { |l| extract_urls(l) }.reverse.uniq
 halt 'No URLs found' if urls.empty?
+open_url(urls.first) && exit if urls.length == 1
 
 header = 'Press CTRL-Y to copy URL to clipboard'
 max_size = `tmux display-message -p "\#{client_width} \#{client_height}"`.split.map(&:to_i)
-size = [[*urls, header].map(&:length).max + 2 + 4 + 2, urls.length + 5 + 1 + 1].zip(max_size).map(&:min).join(',')
-opts = ['--tmux', size, '--multi', '--no-margin', '--no-padding', '--wrap',
-        '--expect', 'ctrl-y', '--style', 'default',
-        '--header', header, '--header-border', 'top',
+size = [([*urls, header].map(&:length).max + 7).clamp(0, 100) + 4, urls.length + 5].zip(max_size).map(&:min).join(',')
+opts = ['--tmux', size, '--multi', '--no-margin', '--no-padding', '--no-wrap', '--cycle',
+        '--expect', 'ctrl-y',
+        '--header', header,
         '--highlight-line', '--header-first', '--info', 'inline-right',
-        '--padding', '1,1,0,1',
         '--border-label', ' URLs '].map(&:shellescape).join(' ')
 selected = with("fzf #{opts}") do
-  puts urls
+  puts urls.map.with_index(1) { |url, index| "%2d: %s" % [index, url] }
 end
 exit if selected.length < 2
 
@@ -69,9 +83,6 @@ if selected.first == 'ctrl-y'
   halt 'Copied to clipboard'
 end
 
-opener = executable('open', 'xdg-open')
-opener = 'nohup xdg-open' if opener == 'xdg-open'
-halt 'No command to open URL with' unless opener
 selected.drop(1).each do |url|
-  system "#{opener} #{Shellwords.escape(url)} &> /dev/null"
+  open_url(url.split.last)
 end
