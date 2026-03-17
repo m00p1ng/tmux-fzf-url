@@ -1,7 +1,8 @@
 tmux-fzf-url
 ============
 
-Open URLs in the current pane with fzf.
+Search the current tmux pane for URLs, use fzf to select one, and either
+open it or copy it to the system clipboard.
 
 Prerequisites
 -------------
@@ -22,6 +23,19 @@ Add this line to your tmux config file, then hit `prefix + I`:
 ```sh
 set -g @plugin 'junegunn/tmux-fzf-url'
 ```
+
+### Manually
+
+All you need to do is associate a tmux keybinding to run the Ruby
+script. Add something like this to your `.tmux.conf` configuration file:
+
+```
+bind-key u run -b "/path/to/fzf-url.rb";
+```
+
+If you use [byobu](https://www.byobu.org/), you can put the script in
+your byobu configuration directory and use
+`$BYOBU_CONFIG_DIR/fzf-url.rb`.
 
 Usage
 -----

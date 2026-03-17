@@ -6,7 +6,7 @@ require 'shellwords'
 
 def executable(*commands)
   commands.find do |c|
-    `command -v #{c.split.first}`.empty?.!
+    `command -v "#{c.split.first}"`.empty?.!
   end
 end
 
@@ -42,7 +42,7 @@ urls = lines.each_line.map(&:strip).reject(&:empty?)
             .flat_map { |l| extract_urls(l) }.reverse.uniq
 halt 'No URLs found' if urls.empty?
 
-header = 'Press CTRL-Y to copy URL to clipboard'
+header = 'Enter: Open URL / CTRL-Y: Copy to clipboard'
 max_size = `tmux display-message -p "\#{client_width} \#{client_height}"`.split.map(&:to_i)
 size = [[*urls, header].map(&:length).max + 2 + 4 + 2, urls.length + 5 + 1 + 1].zip(max_size).map(&:min).join(',')
 opts = ['--tmux', size, '--multi', '--no-margin', '--no-padding', '--wrap',
