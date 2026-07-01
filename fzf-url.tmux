@@ -13,5 +13,6 @@ conf() {
 }
 
 key="$(conf @fzf-url-bind u)"
+history_limit="$(conf @fzf-url-history-limit 10)"
 
-tmux bind-key "$key" run -b "$SCRIPT_DIR/fzf-url.rb";
+tmux bind-key "$key" run -b "$SCRIPT_DIR/fzf-url.rb $history_limit"
